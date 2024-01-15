@@ -1,16 +1,19 @@
 const { clothing, electronic, furniture, product } = require('../../models/product.model')
-const { Types: { ObjectId } } = require('mongoose')
+const {
+  Types: { ObjectId }
+} = require('mongoose')
 const { getSelectData, unSelectData, convertToObjectId } = require('../../utils/index')
-
 
 // create query product basic
 const queryProduct = async ({ query, limit, skip }) => {
-  return await product.find(query)
+  return await product
+    .find(query)
     .populate('product_shop', 'name email -_id')
     .sort({ updateAt: -1 })
     .skip(skip)
     .limit(limit)
-    .lean().exec()
+    .lean()
+    .exec()
 }
 
 const findAllDraftsForShop = async ({ query, limit, skip }) => {
@@ -23,10 +26,14 @@ const findAllPublishForShop = async ({ query, limit, skip }) => {
 
 const searchProduct = async ({ keySearch }) => {
   const regexSearch = new RegExp(keySearch)
-  const results = await product.find({
-    isPublished: true,
-    $text: { $search: regexSearch }
-  }, { score: { $meta: 'textScore' } })
+  const results = await product
+    .find(
+      {
+        isPublished: true,
+        $text: { $search: regexSearch }
+      },
+      { score: { $meta: 'textScore' } }
+    )
     .sort({ score: { $meta: 'textScore' } })
     .lean()
   return results
@@ -59,12 +66,7 @@ const unPublicProductByShop = async ({ product_shop, product_id }) => {
 const findAllProducts = async ({ limit, sort, page, filter, select }) => {
   const skip = (page - 1) * limit
   const sortBy = sort === 'ctime' ? { _id: -1 } : { _id: 1 }
-  const products = await product.find(filter)
-    .sort(sortBy)
-    .skip(skip)
-    .limit(limit)
-    .select(getSelectData(select))
-    .lean()
+  const products = await product.find(filter).sort(sortBy).skip(skip).limit(limit).select(getSelectData(select)).lean()
   return products
 }
 
@@ -72,12 +74,7 @@ const findProductDetail = async ({ product_id, unSelect }) => {
   return await product.findById(product_id).select(unSelectData(unSelect))
 }
 
-const updateProductById = async ({
-  productId,
-  bodyUpdate,
-  model,
-  isNew = true
-}) => {
+const updateProductById = async ({ productId, bodyUpdate, model, isNew = true }) => {
   return await model.findByIdAndUpdate(productId, bodyUpdate, {
     new: isNew
   })
@@ -89,6 +86,22 @@ const getProductIdById = async (productId) => {
   })
 }
 
+// check product and price in server
+const checkProductByServer = async (products) => {
+  return await Promise.all(
+    products.map(async (product) => {
+      const foundProduct = await getProductIdById(product.productId)
+      if (foundProduct) {
+        return {
+          price: foundProduct.product_price,
+          quantity: product.quantity,
+          productId: product.productId
+        }
+      }
+    })
+  )
+}
+
 module.exports = {
   findAllDraftsForShop,
   findAllPublishForShop,
@@ -98,5 +111,6 @@ module.exports = {
   findAllProducts,
   findProductDetail,
   updateProductById,
-  getProductIdById
+  getProductIdById,
+  checkProductByServer
 }

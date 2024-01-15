@@ -22,11 +22,13 @@ class CartService {
       // created cart for user
       return await createUserCart({ userId, product })
     }
-    // neu co gio hang roi nhung chua co san pham
+    // neu co gio hang roi nhung chua co san pham thi them san pham
+    // tim san pham co trong gio hay chua: 1 co roi thi update quantity chua thi them moi
     const foundProductInCart = userCart.cart_products.find((item) => {
       item.productId === product.productId
     })
     if (!foundProductInCart) {
+      // clone lai gia tri cu va add them product moi
       userCart.cart_products = [...userCart.cart_products, product]
       return await userCart.save()
     }

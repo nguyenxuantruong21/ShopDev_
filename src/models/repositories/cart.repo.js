@@ -1,4 +1,5 @@
-const cartModel = require("../cart.model")
+const { convertToObjectId } = require('../../utils')
+const cartModel = require('../cart.model')
 
 const createUserCart = async ({ userId, product }) => {
   const query = { cart_userId: userId, cart_state: 'active' }
@@ -23,8 +24,12 @@ const updateUserCartQuantity = async ({ userId, product }) => {
   return await cartModel.findOneAndUpdate(query, updateSet, options)
 }
 
+const findCartById = async (cartId) => {
+  return await cartModel.findOne({ _id: convertToObjectId(cartId), cart_state: 'active' }).lean()
+}
 
 module.exports = {
   createUserCart,
-  updateUserCartQuantity
+  updateUserCartQuantity,
+  findCartById
 }
